@@ -28,7 +28,7 @@ class Ui_Dialog(object):
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
         self.label = QtWidgets.QLabel(self.frame_2)
-        self.label.setGeometry(QtCore.QRect(114, 0, 521, 101))
+        self.label.setGeometry(QtCore.QRect(114, 5, 521, 101))
         font = QtGui.QFont()
         font.setFamily("URW Gothic")
         font.setPointSize(26)

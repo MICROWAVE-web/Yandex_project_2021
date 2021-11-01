@@ -535,7 +535,6 @@ class Downloading(PageWindow):
                 break
             exc = 'mp4'
             typeS = 'video'
-            print(stream)
             if stream.get('type') == 'audio' or stream.get('ext') == 'mp3':
                 exc = 'mp3'
                 typeS = 'audio'

@@ -55,9 +55,9 @@ border: 1px solid black;</string>
     <property name="geometry">
      <rect>
       <x>114</x>
-      <y>0</y>
+      <y>20</y>
       <width>521</width>
-      <height>101</height>
+      <height>81</height>
      </rect>
     </property>
     <property name="font">
@@ -73,7 +73,7 @@ border: 1px solid black;</string>
      <string notr="true">color: #000;</string>
     </property>
     <property name="text">
-     <string>Добро пожаловать в Linker</string>
+     <string>Дбро пожаловать в Linker</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
