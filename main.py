@@ -3,13 +3,14 @@ import sqlite3
 import sys
 import urllib.request
 
+import pytube
 import requests
 import validators
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QEventLoop, QPropertyAnimation, QEasingCurve, QTimer
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QWidget, QGraphicsOpacityEffect, QLabel, QVBoxLayout, QPushButton, \
-    QApplication
+from PyQt5.QtWidgets import QWidget, QGraphicsOpacityEffect, QLabel, QHBoxLayout, QPushButton, \
+    QApplication, QVBoxLayout
 from pytube import YouTube
 from youtube_dl import YoutubeDL
 
@@ -53,15 +54,23 @@ class Youtube(Social):
             self.yt = None
 
     def streams(self):
-
-        return self.yt.streams.filter(progressive=True)
+        try:
+            return self.yt.streams.filter(progressive=True)
+        except pytube.exceptions.VideoUnavailable:
+            return []
 
     def video_streams(self):
-        return self.yt.streams.filter(type='video', mime_type='video/mp4',
-                                      progressive=True).order_by('resolution')
+        try:
+            return self.yt.streams.filter(type='video', mime_type='video/mp4',
+                                          progressive=True).order_by('resolution')
+        except pytube.exceptions.VideoUnavailable:
+            return []
 
     def audio_streams(self):
-        return self.yt.streams.filter(type='audio', mime_type='audio/mp4').order_by('abr')
+        try:
+            return self.yt.streams.filter(type='audio', mime_type='audio/mp4').order_by('abr')
+        except pytube.exceptions.VideoUnavailable:
+            return []
 
     def download(self, url, parant_object, **kwargs):
         pause(300)
@@ -252,7 +261,7 @@ class Search(PageWindow):
         self.previous = 'nothing :)'
         self.ui = stylesearch.Ui_Dialog()
         self.ui.setupUi(self)
-        self.vbox = QVBoxLayout()
+        self.vbox = QHBoxLayout()
         self.ui.soc_icon = QLabel()
         self.ui.soc_icon.move(-80, 10)
 
@@ -354,12 +363,16 @@ class Search(PageWindow):
                 '240,240,240);}')
             delete_btns[ind] = QPushButton('Удалить')
             delete_btns[ind].setStyleSheet(
-                '.QPushButton {color: white; background-color: red;} '
+                '.QPushButton {color: white; background-color: red; border-radius: 0px;} '
                 '.QPushButton:pressed {background-color: rgb(255,100,100);}')
             click_btns[ind].clicked.connect(
                 lambda x, needed_url=str(stt[-1]): self.ui.lineEdit.setText(needed_url))
             delete_btns[ind].clicked.connect(
                 lambda y, del_id=stt[0]: self.delete_auxiliary_information(del_id))
+            click_btns[ind].setMaximumWidth(100)
+            delete_btns[ind].setMaximumWidth(100)
+            click_btns[ind].setMinimumWidth(100)
+            delete_btns[ind].setMinimumWidth(100)
             self.vbox.addWidget(click_btns[ind])
             self.vbox.addWidget(delete_btns[ind])
             self.widget.setLayout(self.vbox)
@@ -431,6 +444,7 @@ class Loading(PageWindow):
                         streams = list(social.audio_streams())
                         break
         if len(streams) == 0:
+            self.ui.label_3.setStyleSheet('{color: black;}')
             self.ui.label_3.setText('Не удалось найти подходящий стрим, возвращаю...')
             loop = QEventLoop()
             QTimer.singleShot(5000, loop.quit)
