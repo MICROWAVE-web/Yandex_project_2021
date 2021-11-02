@@ -1,4 +1,5 @@
 import random
+import sqlite3
 import sys
 import urllib.request
 
@@ -239,6 +240,7 @@ class Introducing(PageWindow):
 
     def go_next_search(self):
         _parent_window.ending()
+        _parent_window.windowses['search'].update_auxiliary_information()
         self.goto("search")
         _parent_window.opening()
 
@@ -250,6 +252,7 @@ class Search(PageWindow):
         self.previous = 'nothing :)'
         self.ui = stylesearch.Ui_Dialog()
         self.ui.setupUi(self)
+        self.vbox = QVBoxLayout()
         self.ui.soc_icon = QLabel()
         self.ui.soc_icon.move(-80, 10)
 
@@ -270,11 +273,13 @@ class Search(PageWindow):
             lambda: self.social_icons_animation(self.ui.lineEdit.text()))
         self.ui.pushButton.clicked.connect(self.go_next_chooses)
         self.ui.pushButton_2.clicked.connect(self.go_back_intro)
+        self.ui.pushButton_3.clicked.connect(self.save_auxiliary_information)
         self.opacity_effect.setOpacity(0.5)
         self.ui.pushButton.setEnabled(False)
         self.ui.pushButton.setGraphicsEffect(self.opacity_effect)
 
     def social_icons_animation(self, text):
+        self.label_text = text
         for soc in SOCIAL_LIST.keys():
             for domain in SOCIAL_LIST[soc][0]:
                 if domain in text and self.previous not in domain:
@@ -289,6 +294,7 @@ class Search(PageWindow):
                     for i in reversed(range(self.ui.horizontalLayout.count())):
                         self.ui.horizontalLayout.itemAt(i).widget().setParent(None)
                     self.previous = 'nothing :)'
+
         try:
             response = requests.head(text)
             if response.status_code == 200 or 303:
@@ -303,6 +309,7 @@ class Search(PageWindow):
                 self.ui.pushButton.setEnabled(False)
                 self.ui.pushButton.setGraphicsEffect(self.opacity_effect)
                 self.link = ''
+
         except Exception:
             self.ui.label_2.setText('Ошибка доступа к ресурсу - измените ссылку')
             self.opacity_effect.setOpacity(0.5)
@@ -320,6 +327,66 @@ class Search(PageWindow):
         _parent_window.ending()
         self.goto("intro")
         _parent_window.opening()
+
+    def go_back_intro(self):
+        _parent_window.ending()
+        self.goto("intro")
+        _parent_window.opening()
+
+    def update_auxiliary_information(self):
+        for i in reversed(range(self.vbox.count())):
+            self.vbox.itemAt(i).widget().setParent(None)
+        connection = sqlite3.connect('base/favorites.db')
+        cursor = connection.cursor()
+        sqlite_select_query = """SELECT * from favorites"""
+        cursor.execute(sqlite_select_query)
+        self.records = cursor.fetchall()
+
+        click_btns = {}
+        delete_btns = {}
+        for ind, stt in enumerate(self.records, start=1):
+            self.widget = QWidget()
+            click_btns[ind] = QPushButton(f'{stt[0]}\n...{stt[-1][-4:]}')
+            click_btns[ind].setStyleSheet(
+                '.QPushButton {color: black; padding: 5px; border: 1px solid rgb(8,96,'
+                '242); border-radius: 15px; '
+                'background-color: rgb(255,255,255);} .QPushButton:pressed {background-color: rgb('
+                '240,240,240);}')
+            delete_btns[ind] = QPushButton('Удалить')
+            delete_btns[ind].setStyleSheet(
+                '.QPushButton {color: white; background-color: red;} '
+                '.QPushButton:pressed {background-color: rgb(255,100,100);}')
+            click_btns[ind].clicked.connect(
+                lambda x, needed_url=str(stt[-1]): self.ui.lineEdit.setText(needed_url))
+            delete_btns[ind].clicked.connect(
+                lambda y, del_id=stt[0]: self.delete_auxiliary_information(del_id))
+            self.vbox.addWidget(click_btns[ind])
+            self.vbox.addWidget(delete_btns[ind])
+            self.widget.setLayout(self.vbox)
+            self.ui.scrollArea.setWidget(self.widget)
+
+    def save_auxiliary_information(self):
+        connection = sqlite3.connect('base/favorites.db')
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""INSERT INTO favorites
+            (url)
+            VALUES
+            (?);""", (f'{self.label_text}',))
+        except sqlite3.IntegrityError:
+            pass
+        connection.commit()
+        self.update_auxiliary_information()
+
+    def delete_auxiliary_information(self, delete_id: int):
+        print(delete_id)
+        con = sqlite3.connect('base/favorites.db')
+        cur = con.cursor()
+        cur.execute(f"""DELETE FROM favorites WHERE id_url = {delete_id}""")
+        con.commit()
+        cur.close()
+        self.update_auxiliary_information()
+        print('DELETED')
 
 
 class Loading(PageWindow):
@@ -594,6 +661,15 @@ class Downloading(PageWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    connection = sqlite3.connect('base/favorites.db')
+    cursor = connection.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS favorites (
+        id_url INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT
+        );
+    """)
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS Uniuni ON favorites(url)")
+    connection.commit()
     _parent_window = Window()
     _parent_window.setFixedSize(730, 459)
     _parent_window.show()
