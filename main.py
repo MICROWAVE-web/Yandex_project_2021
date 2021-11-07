@@ -1,6 +1,8 @@
+import datetime
 import random
 import sqlite3
 import sys
+import time
 import urllib.request
 
 import pytube
@@ -74,8 +76,8 @@ class Youtube(Social):
 
     def download(self, url, parant_object, **kwargs):
         pause(300)
-        urllib.request.urlretrieve(url, f'{DOWNLOAD_DIRECTORY}/{kwargs["name"]}.{kwargs["exc"]}')
         parant_object.ui.progressBar.setValue(int(parant_object.simple_procent))
+        urllib.request.urlretrieve(url, f'{DOWNLOAD_DIRECTORY}/{kwargs["name"]}.{kwargs["exc"]}')
 
 
 class VK(Social):
@@ -178,6 +180,14 @@ def pause(val):
     loop.exec_()
 
 
+def save_logs(t1, t2, streams):
+    current_date = datetime.datetime.now()
+    current_date_string = current_date.strftime('%m.%d.%y_%H:%M:%S')
+    with open(f'logs/log_{current_date_string}.txt', mode='w') as f:
+        f.write(str(streams) + '\n')
+        f.write(f'\nВремя операции: {round(t2 - t1, 2)}c')
+
+
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -261,7 +271,6 @@ class Search(PageWindow):
         self.previous = 'nothing :)'
         self.ui = stylesearch.Ui_Dialog()
         self.ui.setupUi(self)
-        self.vbox = QHBoxLayout()
         self.ui.soc_icon = QLabel()
         self.ui.soc_icon.move(-80, 10)
 
@@ -337,20 +346,17 @@ class Search(PageWindow):
         self.goto("intro")
         _parent_window.opening()
 
-    def go_back_intro(self):
-        _parent_window.ending()
-        self.goto("intro")
-        _parent_window.opening()
-
     def update_auxiliary_information(self):
-        for i in reversed(range(self.vbox.count())):
-            self.vbox.itemAt(i).widget().setParent(None)
-        connection = sqlite3.connect('base/favorites.db')
-        cursor = connection.cursor()
+        self.vbox = QHBoxLayout()
+        conn = sqlite3.connect('base/favorites.db')
+        curs = conn.cursor()
         sqlite_select_query = """SELECT * from favorites"""
-        cursor.execute(sqlite_select_query)
-        self.records = cursor.fetchall()
-
+        curs.execute(sqlite_select_query)
+        self.records = curs.fetchall()
+        if len(self.records) == 0:
+            empty_label = QLabel('Список избранных пуст.', self)
+            empty_label.setStyleSheet('color: gray;')
+            self.ui.scrollArea.setWidget(empty_label)
         click_btns = {}
         delete_btns = {}
         for ind, stt in enumerate(self.records, start=1):
@@ -379,27 +385,27 @@ class Search(PageWindow):
             self.ui.scrollArea.setWidget(self.widget)
 
     def save_auxiliary_information(self):
-        connection = sqlite3.connect('base/favorites.db')
-        cursor = connection.cursor()
+        conn = sqlite3.connect('base/favorites.db')
+        curs = conn.cursor()
         try:
-            cursor.execute("""INSERT INTO favorites
+            curs.execute("""INSERT INTO favorites
             (url)
             VALUES
             (?);""", (f'{self.label_text}',))
         except sqlite3.IntegrityError:
             pass
-        connection.commit()
+        except AttributeError:
+            pass
+        conn.commit()
         self.update_auxiliary_information()
 
     def delete_auxiliary_information(self, delete_id: int):
-        print(delete_id)
         con = sqlite3.connect('base/favorites.db')
         cur = con.cursor()
         cur.execute(f"""DELETE FROM favorites WHERE id_url = {delete_id}""")
         con.commit()
         cur.close()
         self.update_auxiliary_information()
-        print('DELETED')
 
 
 class Loading(PageWindow):
@@ -607,12 +613,13 @@ class Downloading(PageWindow):
         :
         Основная функция класса скачивания файлов,
         """
+        t1 = time.time()
         self.stream_count = len(streams)
         self.simple_procent = 0
         code = random.choice([str(i) for i in range(100, 999)])
         for index, stream in enumerate(streams, start=1):
+            self.ui.label.setText(f'Скачивание ({index}/{len(streams)})')
             if self.stop_downloading:
-                print('breaking')
                 break
             exc = 'mp4'
             typeS = 'video'
@@ -622,7 +629,9 @@ class Downloading(PageWindow):
             self.simple_procent = round(index / self.stream_count, 2) * 100
             obj_chosen_social.download(stream.get('url'), self, name=f'{typeS}-{str(index)}-{code}',
                                        exc=exc)
-        print('Successfully')
+        t2 = time.time()
+        save_logs(t1, t2, streams)
+        self.ui.label.setText(f'Скачивание завершено.')
         self.ui.pushButton_3.show()
         self.ui.pushButton_2.hide()
 

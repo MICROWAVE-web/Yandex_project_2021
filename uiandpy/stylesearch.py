@@ -114,6 +114,8 @@ class Ui_Dialog(object):
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 479, 65))
+        self.scrollAreaWidgetContents.setStyleSheet("border-top-left-radius: 5px;\n"
+"border-top-right-radius: 5px;")
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.pushButton_3 = QtWidgets.QPushButton(self.frame_2)

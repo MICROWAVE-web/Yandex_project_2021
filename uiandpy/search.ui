@@ -242,6 +242,10 @@ background-color: rgb(240, 240, 240);</string>
        <height>65</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">border-top-left-radius: 5px;
+border-top-right-radius: 5px;</string>
+     </property>
     </widget>
    </widget>
    <widget class="QPushButton" name="pushButton_3">
