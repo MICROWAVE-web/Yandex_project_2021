@@ -218,6 +218,18 @@ class Window(QtWidgets.QMainWindow):
             self.stacked_widget.setCurrentWidget(widget)
             self.setWindowTitle(widget.windowTitle())
 
+    def closeEvent(self, event):
+        reply = QtWidgets.QMessageBox.question \
+            (self, 'Подтверждение',
+             "Вы уверены, что хотите уйти?",
+             QtWidgets.QMessageBox.Yes,
+             QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            print("Пока pushButton")
+            event.accept()
+        else:
+            event.ignore()
+
     def opening(self):
         try:
             self.animation.finished.disconnect(self.close)
